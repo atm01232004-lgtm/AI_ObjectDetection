@@ -13,8 +13,6 @@
         <div class="video-container">
             <video id="video" autoplay playsinline></video>
             <canvas id="canvas" class="hidden"></canvas>
-            <div class="scanner-line hidden" id="scanner"></div>
-
             <div class="clock-overlay" id="clock">--:--:--</div>
 
             <div class="cam-overlay-badge">REC <div class="red-dot"></div></div>
@@ -54,13 +52,17 @@
                 <a href="{{ url_for('index') }}" class="btn-back">
                     <i class="fas fa-arrow-left"></i> Thoát
                 </a>
-                <button class="btn-capture" onclick="captureImage()">
-                    <i class="fas fa-camera"></i> Quét
-                </button>
+
+                <div style="color: #00e676; font-weight: bold; display: flex; align-items: center; gap: 5px;">
+                    <div class="red-dot" style="background:#00e676;"></div> Đang chạy tự động
+                </div>
             </div>
+
+
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.js"></script>
     <script src="{{ url_for('static', filename='camera.js') }}"></script>
 </body>
 </html>

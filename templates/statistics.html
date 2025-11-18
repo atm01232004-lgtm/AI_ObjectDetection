@@ -25,7 +25,12 @@
             <div class="stats-content">
 
                 <div class="stats-image-area">
+                    <button id="btn-toggle-view" class="btn-toggle-img hidden" onclick="toggleImageView()">
+                        <i class="fas fa-eye"></i> <span>Xem ảnh gốc</span>
+                    </button>
+
                     <img id="detail-image" src="" alt="Chưa chọn ảnh" class="hidden">
+
                     <div id="empty-state">
                         <i class="fas fa-image fa-3x"></i>
                         <p>Chọn một mục bên trái để xem chi tiết</p>
@@ -51,9 +56,19 @@
                                 <ul id="d-results"></ul>
                             </div>
                         </div>
+
+                        <button id="btn-delete" class="btn-delete hidden" onclick="deleteCurrentItem()">
+                            <i class="fas fa-trash-alt"></i> Xóa ảnh này
+                        </button>
+
                     </div>
+
+
                 </div>
+
             </div>
+
+
         </div>
     </div>
 

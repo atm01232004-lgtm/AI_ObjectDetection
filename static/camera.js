@@ -1,77 +1,84 @@
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
-const scanner = document.getElementById('scanner');
+// const scanner = document.getElementById('scanner'); <-- XÓA DÒNG NÀY
 const clockEl = document.getElementById('clock');
-
-// Lấy thẻ danh sách (ul)
 const objListEl = document.getElementById('obj-list');
 const qtyListEl = document.getElementById('qty-list');
 
-// 1. Đồng hồ (Giữ nguyên)
+// --- 1. KHỞI TẠO SOCKET ---
+var socket = io();
+
+// --- 2. ĐỒNG HỒ ---
 function updateClock() {
     const now = new Date();
-    clockEl.innerText = now.toLocaleTimeString('vi-VN') + " - " + now.toLocaleDateString('vi-VN');
+    clockEl.innerText = now.toLocaleTimeString('vi-VN');
 }
 setInterval(updateClock, 1000);
-updateClock();
 
-// 2. Camera (Giữ nguyên)
+// --- 3. KHỞI ĐỘNG CAMERA ---
 async function startCamera() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: "environment", width: { ideal: 1920 } }
         });
         video.srcObject = stream;
+
+        // Camera sẵn sàng thì tự động gửi ảnh luôn
+        video.onloadedmetadata = () => {
+            startSendingFrames();
+        };
     } catch (err) { alert("Lỗi Camera: " + err.message); }
 }
 startCamera();
 
-// 3. Chụp & Hiển thị danh sách (CẬP NHẬT MỚI)
-function captureImage() {
-    scanner.classList.remove('hidden');
+// --- 4. GỬI ẢNH LIÊN TỤC ---
+function startSendingFrames() {
+    // scanner.classList.remove('hidden'); <-- XÓA DÒNG NÀY (Bỏ hiệu ứng quét)
 
-    // Hiển thị trạng thái đang tải
-    objListEl.innerHTML = `<li style="color: orange;">Đang quét...</li>`;
-    qtyListEl.innerHTML = `<li>...</li>`;
+    setInterval(() => {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
-    const imageData = canvas.toDataURL('image/jpeg');
-
-    fetch('/predict_camera', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: imageData })
-    })
-    .then(response => response.json())
-    .then(data => {
-        scanner.classList.add('hidden');
-
-        if (data.status === 'success') {
-            // Xóa cũ
-            objListEl.innerHTML = "";
-            qtyListEl.innerHTML = "";
-
-            // Duyệt qua danh sách kết quả trả về (Array)
-            data.results.forEach(item => {
-                // Thêm Tên vật thể
-                const liName = document.createElement("li");
-                liName.innerText = item.name;
-                objListEl.appendChild(liName);
-
-                // Thêm Số lượng
-                const liQty = document.createElement("li");
-                liQty.innerText = item.qty;
-                qtyListEl.appendChild(liQty);
-            });
-
-        } else {
-            objListEl.innerHTML = `<li style="color: red;">Lỗi</li>`;
+            // Nén ảnh 0.5 để gửi nhanh
+            const imageData = canvas.toDataURL('image/jpeg', 0.5);
+            socket.emit('send_frame', { image: imageData });
         }
-    })
-    .catch(error => {
-        scanner.classList.add('hidden');
-        objListEl.innerHTML = "Mất kết nối";
-    });
+    }, 100); // 100ms gửi 1 lần
 }
+
+// --- 5. NHẬN KẾT QUẢ ---
+socket.on('update_detections', function(data) {
+    objListEl.innerHTML = '';
+    qtyListEl.innerHTML = '';
+
+    const translations = {
+        'person': 'Con người', 'cell phone': 'Điện thoại', 'laptop': 'Laptop',
+        'mouse': 'Chuột', 'keyboard': 'Bàn phím', 'chair': 'Cái ghế',
+        'bottle': 'Chai nước', 'cup': 'Cốc'
+    };
+
+    if (Object.keys(data).length === 0) {
+        objListEl.innerHTML = '<li style="color: #777;">---</li>';
+        qtyListEl.innerHTML = '<li>0</li>';
+    } else {
+        for (var objectName in data) {
+            var count = data[objectName];
+            var displayName = translations[objectName] || objectName;
+
+            var liName = document.createElement('li');
+            liName.innerText = displayName;
+            objListEl.appendChild(liName);
+
+            var liQty = document.createElement('li');
+            liQty.innerText = count;
+            qtyListEl.appendChild(liQty);
+        }
+    }
+});
+
+socket.on('disconnect', function() {
+    objListEl.innerHTML = '<li style="color: red;">Mất kết nối!</li>';
+});
