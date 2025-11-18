@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thống kê - Lịch sử</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="app-container stats-container">
+        <header class="header-compact">
+            <a href="{{ url_for('index') }}" class="btn-back-home"><i class="fas fa-arrow-left"></i> Trang chủ</a>
+            <h2>Thống kê nhận diện</h2>
+        </header>
+
+        <div class="stats-layout">
+            <div class="stats-sidebar">
+                <div class="sidebar-header">Danh sách ảnh đã lưu</div>
+                <ul id="history-list">
+                    </ul>
+            </div>
+
+            <div class="stats-content">
+
+                <div class="stats-image-area">
+                    <img id="detail-image" src="" alt="Chưa chọn ảnh" class="hidden">
+                    <div id="empty-state">
+                        <i class="fas fa-image fa-3x"></i>
+                        <p>Chọn một mục bên trái để xem chi tiết</p>
+                    </div>
+                </div>
+
+                <div class="stats-info-area">
+                    <div class="info-header">Kết quả chi tiết</div>
+
+                    <div class="info-grid hidden" id="detail-info">
+                        <div class="info-col">
+                            <p><strong><i class="fas fa-file-alt"></i> Tên ảnh:</strong> <span id="d-name">--</span></p>
+                            <p><strong><i class="fas fa-clock"></i> Thời gian:</strong> <span id="d-time">--</span></p>
+                            <p><strong><i class="fas fa-server"></i> Nguồn:</strong> <span id="d-source">--</span></p>
+                        </div>
+                        <div class="info-col">
+                            <p><strong><i class="fas fa-building"></i> Văn phòng:</strong> <span id="d-office">--</span></p>
+                            <p><strong><i class="fas fa-wifi"></i> IP Camera:</strong> <span id="d-ip">--</span></p>
+                        </div>
+                        <div class="info-col full-width">
+                            <div class="result-box-stats">
+                                <span>Vật thể nhận diện:</span>
+                                <ul id="d-results"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='statistics.js') }}"></script>
+</body>
+</html>

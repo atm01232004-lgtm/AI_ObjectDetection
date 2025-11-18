@@ -1,0 +1,14 @@
+# 1. Đường dẫn TUYỆT ĐỐI đến thư mục 'datasets' của bạn
+#    Đây chính là biến TARGET_DIR trong script của bạn.
+path: D:/AI_DO_Image01/datasets
+
+# 2. Đường dẫn TƯƠNG ĐỐI đến thư mục train/val (từ 'path' ở trên)
+train: train/images
+val: val/images
+
+# 3. Định nghĩa tên các lớp (classes)
+#    Thứ tự này phải khớp với script 'prepare_data.py'
+names:
+  0: chair
+  1: dining table
+  2: laptop

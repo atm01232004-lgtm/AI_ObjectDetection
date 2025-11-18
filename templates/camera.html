@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera AI - Giám sát</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="camera-layout">
+        <div class="video-container">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas" class="hidden"></canvas>
+            <div class="scanner-line hidden" id="scanner"></div>
+
+            <div class="clock-overlay" id="clock">--:--:--</div>
+
+            <div class="cam-overlay-badge">REC <div class="red-dot"></div></div>
+        </div>
+
+        <div class="control-bar">
+
+            <div class="info-table-container">
+                <div class="table-row header-row">
+                    <div class="table-cell border-right">
+                        <span class="cell-label">Tên Phòng</span>
+                        <span class="cell-value">Khu Vực A - Kho 01</span>
+                    </div>
+                    <div class="table-cell">
+                        <span class="cell-label">IP Camera</span>
+                        <span class="cell-value">192.168.1.105</span>
+                    </div>
+                </div>
+
+                <div class="table-row body-row">
+                    <div class="table-cell border-right scrollable">
+                        <div class="sub-header">Vật thể phát hiện</div>
+                        <ul id="obj-list" class="result-list">
+                            <li>---</li>
+                        </ul>
+                    </div>
+                    <div class="table-cell scrollable">
+                        <div class="sub-header">Số lượng</div>
+                        <ul id="qty-list" class="result-list">
+                            <li>---</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <a href="{{ url_for('index') }}" class="btn-back">
+                    <i class="fas fa-arrow-left"></i> Thoát
+                </a>
+                <button class="btn-capture" onclick="captureImage()">
+                    <i class="fas fa-camera"></i> Quét
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='camera.js') }}"></script>
+</body>
+</html>

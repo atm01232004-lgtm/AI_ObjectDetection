@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Nhận Diện AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <header class="header">
+            <div class="logo-area">
+                <i class="fas fa-brain fa-2x icon"></i>
+                <h1>AI Vision Pro</h1>
+            </div>
+            <div class="header-space"></div>
+
+            <div class="header-actions">
+                <a href="{{ url_for('camera_page') }}" title="Mở Camera">
+                    <button class="btn-icon" style="margin-right: 10px;">
+                        <i class="fas fa-camera fa-lg"></i>
+                    </button>
+                </a>
+            </div>
+
+            <div class="header-actions">
+                <a href="{{ url_for('statistics_page') }}" title="Lịch sử thống kê">
+                    <button class="btn-icon"><i class="fas fa-chart-bar" style="margin-right: 10px"></i></button>
+                </a>
+            </div>
+
+            <div class="header-actions">
+                <span style="margin-right: 15px; color: #94a3b8;">Xin chào, <b>{{ username }}</b></span>
+
+                <button class="btn-icon"><i class="fas fa-cog"></i></button>
+
+                <a href="/logout" title="Đăng xuất">
+                    <button class="btn-icon"><i class="fas fa-sign-out-alt"></i></button>
+                </a>
+            </div>
+
+        </header>
+
+        <main class="main-grid">
+            <section class="left-panel">
+                <h2 class="page-title">Nhận diện vật thể</h2>
+
+                <div class="upload-area" id="drop-area">
+                    <input type="file" id="fileElem" accept="image/*" onchange="handleFiles(this.files)">
+                    <label class="upload-label" for="fileElem">
+                        <div id="preview-container">
+                            <i class="fas fa-plus fa-3x"></i>
+                            <p>Tải ảnh lên</p>
+                        </div>
+                        <img id="image-preview" src="" alt="Preview">
+                    </label>
+                </div>
+
+                <button class="btn-primary" onclick="startRecognition()">
+                    <i class="fas fa-search"></i> Nhận dạng
+                </button>
+            </section>
+
+            <section class="right-panel">
+                <h3>Kết quả nhận diện</h3>
+                <div class="result-box" id="result-box">
+                    <div class="placeholder-text">Kết quả sẽ hiện ở đây...</div>
+                    <div class="loader hidden" id="loader"></div>
+                    <div class="result-text hidden" id="result-text"></div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-secondary" onclick="resetApp()">Bỏ lưu</button>
+                    <button class="btn-success">Lưu kết quả</button>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer-decoration">
+            <div class="wave"></div>
+            <div class="wave"></div>
+            <p>Hệ thống sẵn sàng xử lý dữ liệu...</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+﻿Thời gian,Tên bước,Chi tiết,Trạng thái,Ghi chú/Lỗi
+10:31:29,BẮT ĐẦU,Khởi tạo môi trường test,PASS,
+10:31:37,Truy cập,Vào trang login thành công,PASS,
+10:31:39,Điều hướng,Chuyển sang màn hình Đăng Ký,PASS,
+10:31:40,Đăng Ký,Submit user: user_1763350299,PASS,
+10:31:43,Đăng Nhập,Điền thông tin và Submit,PASS,
+10:31:45,Kết quả,Chuyển hướng đúng URL trang chủ,PASS,
+10:31:45,Hiển thị,Thấy tên user 'user_1763350299' trên màn hình,PASS,
