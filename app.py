@@ -1,77 +1,133 @@
+import os
+import json
+import time
+import base64
+import cv2
+import numpy as np
+from datetime import datetime
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from flask_socketio import SocketIO, emit
-import base64
-import numpy as np
-import cv2
 from ultralytics import YOLO
-from datetime import datetime
-import time
+
+# --- 1. THƯ VIỆN DATABASE ---
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.secret_key = 'ai_vision_secret_key_demo'
 
-# --- CẤU HÌNH SOCKET.IO ---
-# async_mode='threading' giúp chạy mượt trên Windows/PyCharm
+# --- 2. CẤU HÌNH DATABASE & THƯ MỤC ẢNH ---
+# File database sẽ tên là 'database.db' nằm cùng thư mục app.py
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+UPLOAD_FOLDER = 'static/uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Tạo thư mục lưu ảnh nếu chưa có
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+db = SQLAlchemy(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
+
+# --- 3. ĐỊNH NGHĨA BẢNG DỮ LIỆU (MODEL) ---
+
+# Bảng Tài Khoản
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)
+
+
+# Bảng Lịch sử
+class History(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.String(50))
+    # Lưu đường dẫn file ảnh (VD: /static/uploads/img_123.jpg)
+    image_path = db.Column(db.String(200))
+    original_path = db.Column(db.String(200))
+    source = db.Column(db.String(50))  # Camera hoặc Upload
+    name = db.Column(db.String(100))
+    # Lưu kết quả dạng chuỗi JSON vì SQLite không có kiểu List/Array
+    results_json = db.Column(db.Text)
+
+
+# Tạo Database ngay khi chạy code
+with app.app_context():
+    db.create_all()
+
 # --- CẤU HÌNH AI ---
-print(">>> Đang tải model best.pt...")
+print(">>> Đang tải model...")
 try:
     model = YOLO('best.pt')
-    print(">>> Model custom đã sẵn sàng!")
-except Exception as e:
-    print(f">>> LỖI: Không tìm thấy 'best.pt'. Đang dùng 'yolov8n.pt'. Lỗi: {e}")
+except:
     model = YOLO('yolov8n.pt')
 
-# --- BIẾN TOÀN CỤC ---
-history_db = []
-users_db = {'admin': '123456'}
 last_save_time = 0
-SAVE_COOLDOWN = 3  # Thời gian chờ giữa các lần tự động lưu (giây)
+SAVE_COOLDOWN = 3
 
 
-# --- CÁC ROUTE GIAO DIỆN (UI) ---
+# --- HÀM HỖ TRỢ LƯU ẢNH RA FILE ---
+def save_image_to_file(img_cv2, prefix):
+    """Lưu ảnh OpenCV ra file .jpg và trả về đường dẫn web"""
+    filename = f"{prefix}_{int(time.time())}_{np.random.randint(100, 999)}.jpg"
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    cv2.imwrite(filepath, img_cv2)
+    # Trả về đường dẫn để Frontend hiển thị (VD: /static/uploads/abc.jpg)
+    return f"/{UPLOAD_FOLDER}/{filename}"
 
+
+# --- CÁC ROUTE GIAO DIỆN ---
 @app.route('/')
 def index():
-    if 'username' not in session:
-        return redirect(url_for('login_page'))
+    if 'username' not in session: return redirect(url_for('login_page'))
     return render_template('index.html', username=session['username'])
 
 
+@app.route('/camera')
+def camera_page():
+    if 'username' not in session: return redirect(url_for('login_page'))
+    return render_template('camera.html', username=session['username'])
+
+
+@app.route('/statistics')
+def statistics_page():
+    if 'username' not in session: return redirect(url_for('login_page'))
+    return render_template('statistics.html', username=session['username'])
+
+
+# --- XỬ LÝ ĐĂNG NHẬP / ĐĂNG KÝ (DÙNG DB THẬT) ---
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
-    if 'username' in session:
-        return redirect(url_for('index'))
+    if 'username' in session: return redirect(url_for('index'))
+
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         action = request.form.get('action')
 
         if action == 'register':
-            users_db[username] = password
+            # Kiểm tra tồn tại
+            existing_user = User.query.filter_by(username=username).first()
+            if existing_user:
+                return render_template('login.html', error="Tài khoản đã tồn tại!")
+
+            # Tạo user mới
+            new_user = User(username=username, password=password)
+            db.session.add(new_user)
+            db.session.commit()
             return render_template('login.html', success="Đăng ký thành công!")
+
         elif action == 'login':
-            if username in users_db and users_db[username] == password:
-                session['username'] = username
+            # Tìm user trong DB
+            user = User.query.filter_by(username=username, password=password).first()
+            if user:
+                session['username'] = user.username
                 return redirect(url_for('index'))
             else:
-                return render_template('login.html', error="Sai tài khoản/mật khẩu!")
+                return render_template('login.html', error="Sai tài khoản hoặc mật khẩu!")
+
     return render_template('login.html')
-
-
-@app.route('/camera')
-def camera_page():
-    if 'username' not in session:
-        return redirect(url_for('login_page'))
-    return render_template('camera.html')
-
-
-@app.route('/statistics')
-def statistics_page():
-    if 'username' not in session:
-        return redirect(url_for('login_page'))
-    return render_template('statistics.html')
 
 
 @app.route('/logout')
@@ -80,150 +136,138 @@ def logout():
     return redirect(url_for('login_page'))
 
 
-# --- CÁC ROUTE API (XỬ LÝ DỮ LIỆU) ---
-
+# --- API LỊCH SỬ (LẤY TỪ DB) ---
 @app.route('/api/history')
 def get_history():
-    # Trả về danh sách đảo ngược (Mới nhất lên đầu)
-    return jsonify(history_db[::-1])
+    # Lấy tất cả bản ghi, sắp xếp mới nhất lên đầu
+    records = History.query.order_by(History.id.desc()).all()
+
+    data = []
+    for r in records:
+        data.append({
+            'id': r.id,
+            'timestamp': r.timestamp,
+            'image': r.image_path,  # Đường dẫn ảnh có khung
+            'image_original': r.original_path,  # Đường dẫn ảnh gốc
+            'source': r.source,
+            'name': r.name,
+            'results': json.loads(r.results_json)  # Giải mã chuỗi JSON thành List
+        })
+    return jsonify(data)
 
 
 @app.route('/api/delete_history', methods=['POST'])
 def delete_history():
     try:
-        data = request.get_json()
-        item_id = data.get('id')
-        global history_db
-        history_db = [item for item in history_db if item['id'] != item_id]
-        return jsonify({'status': 'success'})
+        item_id = request.get_json().get('id')
+        record = History.query.get(item_id)
+        if record:
+            # (Tùy chọn) Xóa file ảnh trên ổ cứng để tiết kiệm dung lượng
+            # os.remove(record.image_path.lstrip('/')) ...
+
+            db.session.delete(record)
+            db.session.commit()
+            return jsonify({'status': 'success'})
+        return jsonify({'status': 'error', 'message': 'Not found'})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
 
 
-# --- CHỨC NĂNG 1: UPLOAD ẢNH (HTTP POST) ---
+# --- UPLOAD ẢNH ---
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        if 'file' not in request.files:
-            return jsonify({'status': 'error', 'message': 'Chưa chọn file'})
-
         file = request.files['file']
-
-        # Đọc ảnh
         file_bytes = np.frombuffer(file.read(), np.uint8)
         img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-        if img is None:
-            return jsonify({'status': 'error', 'message': 'File lỗi'})
+        if img is None: return jsonify({'status': 'error'})
 
-        # 1. TẠO ẢNH GỐC (Để xem lại)
-        img_original = img.copy()
-        _, buffer_orig = cv2.imencode('.jpg', img_original)
-        base64_original = "data:image/jpeg;base64," + base64.b64encode(buffer_orig).decode('utf-8')
+        # 1. Lưu ảnh gốc ra file
+        path_orig = save_image_to_file(img, "Upload_Orig")
 
-        # 2. CHẠY AI VÀ TẠO ẢNH VẼ KHUNG
+        # 2. AI xử lý
         results = model(img, conf=0.4)
         annotated_img = results[0].plot()
 
-        _, buffer_ann = cv2.imencode('.jpg', annotated_img)
-        base64_annotated = "data:image/jpeg;base64," + base64.b64encode(buffer_ann).decode('utf-8')
+        # 3. Lưu ảnh vẽ khung ra file
+        path_ann = save_image_to_file(annotated_img, "Upload_Ann")
 
-        # 3. Đếm số lượng
+        # 4. Đếm số lượng
         detected_counts = {}
         for result in results:
             for box in result.boxes:
-                class_name = model.names[int(box.cls[0])]
-                detected_counts[class_name] = detected_counts.get(class_name, 0) + 1
+                cls = model.names[int(box.cls[0])]
+                detected_counts[cls] = detected_counts.get(cls, 0) + 1
 
         final_results = [{'name': k, 'qty': v} for k, v in detected_counts.items()]
         if not final_results: final_results = [{'name': 'Không phát hiện', 'qty': 0}]
 
-        # 4. LƯU VÀO LỊCH SỬ
-        record = {
-            'id': int(datetime.now().timestamp()),
-            'timestamp': datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-            'image': base64_annotated,  # Ảnh có khung
-            'image_original': base64_original,  # Ảnh gốc
-            'source': 'Upload',
-            'name': file.filename,
-            'ip_cam': 'N/A',
-            'office': 'N/A',
-            'results': final_results
-        }
-        history_db.append(record)
+        # 5. LƯU VÀO DB
+        new_record = History(
+            timestamp=datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            image_path=path_ann,
+            original_path=path_orig,
+            source="Upload",
+            name=file.filename,
+            results_json=json.dumps(final_results)  # Chuyển List thành chuỗi để lưu
+        )
+        db.session.add(new_record)
+        db.session.commit()
 
-        return jsonify({
-            'status': 'success',
-            'image_with_box': base64_annotated,
-            'details': final_results
-        })
+        return jsonify({'status': 'success', 'image_with_box': path_ann, 'details': final_results})
 
     except Exception as e:
-        print("Lỗi Upload:", e)
+        print(e)
         return jsonify({'status': 'error', 'message': str(e)})
 
 
-# --- CHỨC NĂNG 2: CAMERA REAL-TIME (SOCKET.IO) ---
+# --- CAMERA REAL-TIME ---
 @socketio.on('send_frame')
 def handle_frame(data):
     global last_save_time
-
     try:
-        # Giải mã ảnh từ Client
-        image_data = data['image']
-        encoded_data = image_data.split(',')[1]
+        # Decode ảnh
+        encoded_data = data['image'].split(',')[1]
         nparr = np.frombuffer(base64.b64decode(encoded_data), np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-        # Chạy AI
+        # AI
         results = model(img, conf=0.5, verbose=False)
-
-        # Đếm số lượng để gửi về giao diện ngay lập tức
         detected_counts = {}
         for result in results:
             for box in result.boxes:
-                class_name = model.names[int(box.cls[0])]
-                detected_counts[class_name] = detected_counts.get(class_name, 0) + 1
+                cls = model.names[int(box.cls[0])]
+                detected_counts[cls] = detected_counts.get(cls, 0) + 1
 
         emit('update_detections', detected_counts)
 
-        # --- LOGIC TỰ ĐỘNG LƯU ---
-        # Chỉ lưu khi: Có vật thể VÀ đã qua thời gian Cooldown (3s)
+        # Tự động lưu
         if detected_counts and (time.time() - last_save_time > SAVE_COOLDOWN):
             last_save_time = time.time()
 
-            # 1. TẠO ẢNH GỐC (QUAN TRỌNG: Sửa lỗi thiếu ảnh gốc)
-            # img đang là ảnh sạch, lưu nó lại ngay
-            _, buffer_orig = cv2.imencode('.jpg', img)
-            base64_original = "data:image/jpeg;base64," + base64.b64encode(buffer_orig).decode('utf-8')
-
-            # 2. TẠO ẢNH VẼ KHUNG
+            # Lưu file ảnh
+            path_orig = save_image_to_file(img, "Auto_Orig")
             annotated_img = results[0].plot()
-            _, buffer_ann = cv2.imencode('.jpg', annotated_img)
-            base64_annotated = "data:image/jpeg;base64," + base64.b64encode(buffer_ann).decode('utf-8')
+            path_ann = save_image_to_file(annotated_img, "Auto_Ann")
 
-            # 3. Tạo danh sách kết quả
             final_results = [{'name': k, 'qty': v} for k, v in detected_counts.items()]
 
-            # 4. Lưu vào Lịch sử
-            record = {
-                'id': int(time.time()),
-                'timestamp': datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                'image': base64_annotated,  # Ảnh có khung
-                'image_original': base64_original,  # Ảnh gốc (Đã thêm mới)
-                'source': 'Camera (Auto)',
-                'name': f"AutoCap_{datetime.now().strftime('%H%M%S')}.jpg",
-                'ip_cam': '192.168.1.105',
-                'office': 'Khu Vực A - Kho 01',
-                'results': final_results
-            }
-            history_db.append(record)
-            print(f">>> [AUTO SAVE] Đã lưu: {record['name']}")
+            # Lưu DB
+            new_record = History(
+                timestamp=datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                image_path=path_ann,
+                original_path=path_orig,
+                source="Camera (Auto)",
+                name=f"Cam_{int(time.time())}.jpg",
+                results_json=json.dumps(final_results)
+            )
+            db.session.add(new_record)
+            db.session.commit()
+            print(f">>> [DB SAVE] Đã lưu ID: {new_record.id}")
 
     except Exception as e:
         print("Socket Error:", e)
 
 
-# --- CHẠY SERVER ---
 if __name__ == '__main__':
-    # Dùng socketio.run để đảm bảo WebSocket hoạt động tốt nhất
     socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
