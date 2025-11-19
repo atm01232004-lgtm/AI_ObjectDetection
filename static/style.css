@@ -33,22 +33,74 @@ body {
 }
 
 /* Header */
+/* --- MENU HEADER CHUẨN (DÙNG CHUNG 3 TRANG) --- */
 .header {
+    height: 60px;
+    background: #1e293b; /* Màu nền tối đồng bộ */
     display: flex;
     align-items: center;
     padding: 0 20px;
-    background: rgba(255,255,255,0.05);
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-bottom: 1px solid #334155;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    justify-content: space-between;
 }
+
 .logo-area {
+    display: flex; align-items: center; gap: 10px;
+    color: #88CDF6; text-decoration: none;
+}
+.logo-area:hover { color: white; }
+
+.header-actions {
     display: flex;
     align-items: center;
-    gap: 10px;
-    color: var(--primary);
+    gap: 5px; /* Khoảng cách giữa các icon */
 }
-.header-space { flex-grow: 1; }
-.btn-icon { background: none; border: none; color: var(--text-gray); font-size: 1.2rem; cursor: pointer; margin-left: 10px; }
 
+/* Style cho các nút điều hướng */
+.nav-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8; /* Màu xám khi chưa chọn */
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s;
+    text-decoration: none; /* Xóa gạch chân thẻ a */
+}
+
+.nav-btn i { font-size: 1.2rem; }
+
+/* Hiệu ứng khi di chuột */
+.nav-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #88CDF6;
+}
+
+/* Hiệu ứng khi đang ở trang đó (Active) */
+.nav-btn.active {
+    background: #0f172a; /* Nền đậm hơn */
+    color: #00e676; /* Màu xanh lá nổi bật */
+    border: 1px solid #334155;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* Đường gạch dọc phân cách */
+.divider {
+    width: 1px;
+    height: 25px;
+    background: #475569;
+    margin: 0 10px;
+}
+
+.user-info {
+    color: #cbd5e1;
+    font-size: 0.9rem;
+    margin-right: 10px;
+    margin-left: 5px;
+}
 /* Main Grid */
 .main-grid {
     display: grid;
@@ -406,14 +458,20 @@ video {
     top: 15px;
     left: 20px;
     color: #FFFFFF;
-    font-family: 'Courier New', Courier, monospace; /* Font kiểu kỹ thuật số */
-    font-size: 1.5rem;
+    font-family: 'Courier New', Courier, monospace;
+
+    /* GIẢM SIZE CHÚT CHO VỪA VẶN */
+    font-size: 1.1rem;
+
     font-weight: bold;
-    background: rgba(0, 0, 0, 0.5); /* Nền đen mờ để dễ đọc */
-    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.6); /* Đậm hơn chút cho dễ đọc */
+    padding: 8px 12px;
     border-radius: 5px;
     border: 1px solid rgba(255, 255, 255, 0.3);
     z-index: 20;
+
+    min-width: 220px;
+    text-align: center;
     text-shadow: 0 0 5px black;
 }
 
@@ -835,3 +893,100 @@ video {
 .btn-delete:hover { background: #dc2626; transform: scale(1.05); }
 .stats-info-area { position: relative; } /* Để nút xóa căn theo góc */
 
+/* Thêm hoặc sửa đoạn này trong file CSS */
+.hidden {
+    display: none !important;
+}
+
+/* Đảm bảo ảnh xem trước nằm gọn trong khung */
+#image-view-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0,0,0,0.2);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+#image-preview {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block; /* Đảm bảo ảnh hiển thị dạng khối */
+}
+
+/* Nút X đỏ */
+.btn-close-img {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #ef4444;
+    color: white;
+    border: none;
+    cursor: pointer;
+    z-index: 100; /* Đảm bảo nút nổi lên trên cùng */
+    display: flex; align-items: center; justify-content: center;
+}
+
+/* --- SỬA LẠI NÚT CHUYỂN ĐỔI (GHOST BUTTON) --- */
+
+button.ghost {
+    background-color: transparent; /* Nền trong suốt */
+    border: 1px solid #FFFFFF;     /* Viền trắng mảnh */
+    color: #FFFFFF;                /* Chữ màu trắng hoàn toàn */
+
+    /* Kích thước và bo tròn */
+    padding: 12px 45px;
+    border-radius: 25px;
+
+    /* Font chữ */
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+
+    /* Căn chỉnh */
+    margin-top: 20px;
+    cursor: pointer;
+    transition: transform 80ms ease-in, background-color 0.3s, color 0.3s;
+}
+
+/* Hiệu ứng khi di chuột vào: Nút chuyển thành màu trắng, chữ đổi màu xanh */
+button.ghost:hover {
+    background-color: #FFFFFF;
+    color: #3b82f6; /* Màu xanh chủ đạo của app */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+/* Hiệu ứng khi bấm xuống */
+button.ghost:active {
+    transform: scale(0.95);
+}
+
+/* Loại bỏ đường viền xanh mặc định khi bấm vào (cái ô vuông xám bạn đang thấy) */
+button.ghost:focus {
+    outline: none;
+}
+
+/* --- BACKGROUND ANIMATION --- */
+#bg-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1; /* Nằm dưới tất cả các phần tử khác */
+    background: #0f172a; /* Màu nền gốc (Xanh đen) */
+}
+
+/* Đảm bảo nội dung bên trên không bị nền che mất */
+.app-container, .container-login, .camera-layout {
+    position: relative;
+    z-index: 1;
+}

@@ -1,31 +1,56 @@
 // --- 1. HÀM XEM TRƯỚC ẢNH (Preview) ---
 // Hàm này chạy ngay khi bạn chọn file từ máy tính
+// 1. Xử lý khi chọn file
 function handleFiles(files) {
-    const preview = document.getElementById('image-preview');
-    const container = document.getElementById('preview-container');
     const file = files[0];
+
+    // Lấy các phần tử cần thiết
+    const preview = document.getElementById('image-preview');
+    const wrapper = document.getElementById('image-view-wrapper');
+    const label = document.getElementById('upload-label');
+
+    // Kiểm tra xem HTML có đủ ID chưa, nếu thiếu thì báo lỗi
+    if (!preview || !wrapper || !label) {
+        console.error("LỖI: Thiếu ID trong HTML! Kiểm tra lại: image-preview, image-view-wrapper, upload-label");
+        return;
+    }
 
     if (file) {
         const reader = new FileReader();
-
-        // Khi đọc file xong thì gắn vào thẻ img
         reader.onload = function(e) {
+            // Gán ảnh
             preview.src = e.target.result;
-            preview.style.display = 'block'; // Hiện ảnh
 
-            // Ẩn cái icon dấu cộng và chữ "Tải ảnh lên" đi
-            if (container) container.style.display = 'none';
+            // Ẩn nhãn "Tải lên", Hiện khung ảnh
+            label.classList.add('hidden');
+            wrapper.classList.remove('hidden');
 
-            // Reset lại khung kết quả nếu đang hiện kết quả cũ
-            const resultBox = document.getElementById('result-box');
-            if(resultBox.querySelector('.result-image-container')) {
-                // Nếu đang hiện kết quả cũ, reset về trạng thái chờ
-                 document.getElementById('output-image').style.display = 'none';
-                 document.getElementById('output-text').innerHTML = '<div style="text-align:center; color:#aaa;">Sẵn sàng nhận diện</div>';
+            // Xóa kết quả cũ bên phải (nếu có)
+            if(typeof resetRightPanel === "function") {
+                resetRightPanel();
             }
         }
         reader.readAsDataURL(file);
     }
+}
+
+// 2. Nút Xóa Ảnh (Nút X)
+function removeImage() {
+    document.getElementById('fileElem').value = ""; // Reset input
+
+    // Ẩn khung ảnh, Hiện nhãn "Tải lên"
+    document.getElementById('image-view-wrapper').classList.add('hidden');
+    document.getElementById('upload-label').classList.remove('hidden');
+    document.getElementById('image-preview').src = "";
+
+    if(typeof resetRightPanel === "function") {
+        resetRightPanel();
+    }
+}
+
+// 3. Nút Đổi ảnh (Kích hoạt input file)
+function triggerChangeImage() {
+    document.getElementById('fileElem').click();
 }
 
 // --- 2. HÀM GỬI ẢNH LÊN SERVER (Upload) ---

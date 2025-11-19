@@ -9,11 +9,19 @@ const qtyListEl = document.getElementById('qty-list');
 var socket = io();
 
 // --- 2. ĐỒNG HỒ ---
+// --- 2. ĐỒNG HỒ (Đã sửa lại để hiện Ngày + Giờ) ---
 function updateClock() {
     const now = new Date();
-    clockEl.innerText = now.toLocaleTimeString('vi-VN');
+    // Lấy ngày: 18/11/2025
+    const dateString = now.toLocaleDateString('vi-VN');
+    // Lấy giờ: 20:47:54
+    const timeString = now.toLocaleTimeString('vi-VN');
+
+    // Nối lại: 18/11/2025 - 20:47:54
+    clockEl.innerText = `${dateString} - ${timeString}`;
 }
 setInterval(updateClock, 1000);
+
 
 // --- 3. KHỞI ĐỘNG CAMERA ---
 async function startCamera() {

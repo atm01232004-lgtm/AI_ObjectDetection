@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="login-body">
+<canvas id="bg-canvas"></canvas>
 
     <div class="container-login" id="container">
 
@@ -81,5 +82,8 @@
             container.classList.remove("right-panel-active");
         });
     </script>
+
+    <script src="{{ url_for('static', filename='background.js') }}"></script>
+
 </body>
 </html>

@@ -8,8 +8,42 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
+<canvas id="bg-canvas"></canvas>
 
     <div class="camera-layout">
+        <header class="header">
+            <a href="/" class="logo-area">
+                <i class="fas fa-brain fa-2x"></i>
+                <h1>AI Vision Pro</h1>
+            </a>
+
+            <div class="header-actions">
+
+                <a href="/" title="Trang chủ" class="nav-btn {% if request.path == '/' %}active{% endif %}">
+                    <i class="fas fa-home"></i>
+                </a>
+
+                <a href="/camera" title="Camera AI" class="nav-btn {% if request.path == '/camera' %}active{% endif %}">
+                    <i class="fas fa-camera"></i>
+                </a>
+
+                <a href="/statistics" title="Lịch sử nhận diện" class="nav-btn {% if request.path == '/statistics' %}active{% endif %}">
+                    <i class="fas fa-list-alt"></i> </a>
+
+                <div class="divider"></div>
+
+                <span class="user-info">Xin chào, <b>{{ username }}</b></span>
+
+                <button class="nav-btn" title="Cài đặt">
+                    <i class="fas fa-cog"></i>
+                </button>
+
+                <a href="/logout" title="Đăng xuất" class="nav-btn" style="color: #ef4444;">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+        </header>
+
         <div class="video-container">
             <video id="video" autoplay playsinline></video>
             <canvas id="canvas" class="hidden"></canvas>
@@ -64,5 +98,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.js"></script>
     <script src="{{ url_for('static', filename='camera.js') }}"></script>
+    <script src="{{ url_for('static', filename='background.js') }}"></script>
 </body>
 </html>
