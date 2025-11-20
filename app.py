@@ -312,54 +312,6 @@ def handle_frame(data):
     except Exception as e:
         print("Socket Error:", e)
 
-
-# --- 3. CẬP NHẬT LOGIC CAMERA (SOCKET) ---
-@socketio.on('send_frame')
-def handle_frame(data):
-    global last_save_time
-    try:
-        # ... (Đoạn giải mã ảnh và chạy AI giữ nguyên) ...
-        image_data = data['image']
-        encoded_data = image_data.split(',')[1]
-        nparr = np.frombuffer(base64.b64decode(encoded_data), np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        results = model(img, conf=0.5, verbose=False)
-
-        detected_counts = {}
-        for result in results:
-            for box in result.boxes:
-                cls = model.names[int(box.cls[0])]
-                detected_counts[cls] = detected_counts.get(cls, 0) + 1
-
-        # --- LOGIC MỚI: SO SÁNH VỚI MỤC TIÊU (TARGETS) ---
-        # Lấy danh sách mục tiêu từ DB
-        # Lưu ý: Truy vấn DB trong vòng lặp real-time có thể chậm,
-        # thực tế nên cache lại biến này ra biến toàn cục, nhưng để đơn giản ta query luôn.
-        targets = Target.query.all()
-        is_alert = False
-
-        for t in targets:
-            # Nếu số lượng phát hiện < số lượng yêu cầu
-            current_qty = detected_counts.get(t.name, 0)
-            if current_qty < t.min_qty:
-                is_alert = True
-                break  # Chỉ cần 1 món thiếu là báo động ngay
-
-        # Gửi kết quả kèm trạng thái báo động
-        emit('update_detections', {
-            'counts': detected_counts,
-            'is_alert': is_alert
-        })
-
-        # ... (Đoạn logic tự động lưu ảnh giữ nguyên) ...
-        # (Bạn có thể thêm điều kiện: Chỉ lưu ảnh khi is_alert == True nếu muốn)
-        if detected_counts and (time.time() - last_save_time > SAVE_COOLDOWN):
-            # ... (Code lưu ảnh cũ giữ nguyên) ...
-            pass  # (Giữ nguyên code cũ của bạn ở đây)
-
-    except Exception as e:
-        print("Socket Error:", e)
-
 # --- API CHO CÀI ĐẶT (SETTINGS) ---
 @app.route('/api/targets', methods=['GET', 'POST'])
 def manage_targets():
