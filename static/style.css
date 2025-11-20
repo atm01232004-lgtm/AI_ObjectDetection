@@ -1047,3 +1047,73 @@ button.ghost:focus {
 .target-table th { text-align: left; color: #88CDF6; padding: 10px; border-bottom: 1px solid #334155; }
 .target-table td { padding: 10px; border-bottom: 1px solid #334155; }
 .btn-del-target { color: #ef4444; background: none; border: none; cursor: pointer; }
+
+/* --- LOGO ANIMATION & ICON BUTTONS --- */
+
+/* 1. Container chứa Logo */
+.ai-logo-anim {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px; /* Cách tiêu đề ra một chút */
+    animation: float 3s ease-in-out infinite; /* Hiệu ứng lơ lửng */
+}
+
+/* Icon chính (Bộ não / Robot) */
+.ai-logo-anim i {
+    font-size: 3rem;
+    color: #fff;
+    z-index: 2;
+    text-shadow: 0 0 15px rgba(255,255,255,0.5);
+}
+
+/* Vòng tròn tỏa ra (Pulse effect) */
+.pulse-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+/* 2. Nút Mũi tên tròn (Thay thế nút chữ nhật cũ) */
+.btn-circle {
+    border-radius: 50% !important; /* Tròn vo */
+    width: 50px;
+    height: 50px;
+    padding: 0 !important; /* Bỏ padding cũ */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem !important;
+    margin-top: 25px;
+    border: 2px solid rgba(255,255,255,0.5) !important;
+    background: rgba(255,255,255,0.1) !important;
+    backdrop-filter: blur(5px);
+}
+
+.btn-circle:hover {
+    background: #fff !important;
+    color: var(--primary) !important; /* Đổi màu icon khi hover */
+    transform: scale(1.1) !important; /* Phóng to nhẹ */
+    box-shadow: 0 0 20px rgba(255,255,255,0.4);
+}
+
+/* --- KEYFRAMES (Định nghĩa chuyển động) --- */
+
+/* Hiệu ứng lơ lửng lên xuống */
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+/* Hiệu ứng vòng tròn tỏa ra */
+@keyframes pulse-ring {
+    0% { transform: scale(0.8); opacity: 1; }
+    100% { transform: scale(2); opacity: 0; }
+}

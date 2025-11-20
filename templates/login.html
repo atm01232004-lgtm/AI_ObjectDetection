@@ -13,6 +13,7 @@
     <div class="container-login" id="container">
 
         <div class="form-container sign-up-container">
+
             <form action="/login" method="POST">
                 <h1>Tạo tài khoản</h1>
                 <div class="social-container">
@@ -55,16 +56,34 @@
 
         <div class="overlay-container">
             <div class="overlay">
+
                 <div class="overlay-panel overlay-left">
+                    <div class="ai-logo-anim">
+                        <div class="pulse-ring"></div>
+                        <i class="fas fa-brain"></i>
+                    </div>
+
                     <h1>Chào mừng trở lại!</h1>
                     <p>Để tiếp tục sử dụng AI Vision Pro, vui lòng đăng nhập</p>
-                    <button class="ghost" id="signIn">Đăng Nhập</button>
+
+                    <button class="ghost btn-circle" id="signIn" title="Đến màn hình Đăng nhập">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
                 </div>
+
                 <div class="overlay-panel overlay-right">
+                    <div class="ai-logo-anim">
+                        <div class="pulse-ring"></div>
+                        <i class="fas fa-robot"></i> </div>
+
                     <h1>Xin chào, Bạn mới?</h1>
                     <p>Nhập thông tin cá nhân và bắt đầu hành trình với AI</p>
-                    <button class="ghost" id="signUp">Đăng Ký</button>
+
+                    <button class="ghost btn-circle" id="signUp" title="Đến màn hình Đăng ký">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
                 </div>
+
             </div>
         </div>
     </div>
