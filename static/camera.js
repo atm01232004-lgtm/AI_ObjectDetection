@@ -1,6 +1,5 @@
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
-// const scanner = document.getElementById('scanner'); <-- XÓA DÒNG NÀY
 const clockEl = document.getElementById('clock');
 const objListEl = document.getElementById('obj-list');
 const qtyListEl = document.getElementById('qty-list');
@@ -9,7 +8,6 @@ const qtyListEl = document.getElementById('qty-list');
 var socket = io();
 
 // --- 2. ĐỒNG HỒ ---
-// --- 2. ĐỒNG HỒ (Đã sửa lại để hiện Ngày + Giờ) ---
 function updateClock() {
     const now = new Date();
     // Lấy ngày: 18/11/2025

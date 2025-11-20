@@ -18,12 +18,11 @@
             </a>
 
             <div class="header-actions">
-
                 <a href="/" title="Trang chủ" class="nav-btn {% if request.path == '/' %}active{% endif %}">
                     <i class="fas fa-home"></i>
                 </a>
 
-                <a href="/camera" title="Camera AI" class="nav-btn {% if request.path == '/camera' %}active{% endif %}">
+                <a href="/camera" title="Camera AI" id="nav-cam-icon" class="nav-btn {% if request.path == '/camera' %}active{% endif %}">
                     <i class="fas fa-camera"></i>
                 </a>
 
@@ -34,14 +33,17 @@
 
                 <span class="user-info">Xin chào, <b>{{ username }}</b></span>
 
-                <button class="nav-btn" title="Cài đặt">
-                    <i class="fas fa-cog"></i>
-                </button>
-
                 <a href="/logout" title="Đăng xuất" class="nav-btn" style="color: #ef4444;">
                     <i class="fas fa-sign-out-alt"></i>
                 </a>
+
             </div>
+
+            <div id="global-cam-container" class="hidden" style="position:fixed; top:-1000px;">
+                <video id="global-video" autoplay playsinline></video>
+                <canvas id="global-canvas"></canvas>
+            </div>
+
         </header>
 
         <div class="stats-layout">
@@ -101,7 +103,10 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.js"></script>
+    <script src="{{ url_for('static', filename='global.js') }}"></script>
     <script src="{{ url_for('static', filename='statistics.js') }}"></script>
     <script src="{{ url_for('static', filename='background.js') }}"></script>
+
 </body>
 </html>

@@ -18,29 +18,69 @@
             </a>
 
             <div class="header-actions">
-
                 <a href="/" title="Trang chủ" class="nav-btn {% if request.path == '/' %}active{% endif %}">
                     <i class="fas fa-home"></i>
                 </a>
 
-                <a href="/camera" title="Camera AI" class="nav-btn {% if request.path == '/camera' %}active{% endif %}">
+                <a href="/camera" title="Camera AI" id="nav-cam-icon" class="nav-btn {% if request.path == '/camera' %}active{% endif %}">
                     <i class="fas fa-camera"></i>
                 </a>
 
                 <a href="/statistics" title="Lịch sử nhận diện" class="nav-btn {% if request.path == '/statistics' %}active{% endif %}">
                     <i class="fas fa-list-alt"></i> </a>
 
+                <button class="nav-btn" title="Cài đặt Giám sát" onclick="openSettingsModal()">
+                    <i class="fas fa-cog"></i>
+                </button>
+
                 <div class="divider"></div>
 
                 <span class="user-info">Xin chào, <b>{{ username }}</b></span>
 
-                <button class="nav-btn" title="Cài đặt">
-                    <i class="fas fa-cog"></i>
-                </button>
-
                 <a href="/logout" title="Đăng xuất" class="nav-btn" style="color: #ef4444;">
                     <i class="fas fa-sign-out-alt"></i>
                 </a>
+
+            </div>
+
+            <div id="global-cam-container" class="hidden" style="position:fixed; top:-1000px;">
+                <video id="global-video" autoplay playsinline></video>
+                <canvas id="global-canvas"></canvas>
+            </div>
+
+            <div id="settings-modal" class="modal-overlay hidden">
+                <div class="modal-box">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-cog"></i> Cài đặt Giám sát</h3>
+                        <button class="btn-close" onclick="closeSettingsModal()"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="hint-text">Nhập tên vật thể (theo tiếng Anh, vd: person, laptop) và số lượng tối thiểu cần có.</p>
+
+                        <div class="input-group">
+                            <input type="text" id="set-name" placeholder="Tên (vd: person)">
+                            <input type="number" id="set-qty" placeholder="Số lượng (vd: 2)" min="1">
+                            <button class="btn-add" onclick="addTarget()"><i class="fas fa-plus"></i></button>
+                        </div>
+
+                        <div class="target-list-wrapper">
+                            <table class="target-table">
+                                <thead>
+                                    <tr>
+                                        <th>Vật thể</th>
+                                        <th>Yêu cầu</th>
+                                        <th>Hành động</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="target-list-body">
+                                    </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-secondary" onclick="closeSettingsModal()">Đóng</button>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -97,7 +137,8 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.js"></script>
-    <script src="{{ url_for('static', filename='camera.js') }}"></script>
     <script src="{{ url_for('static', filename='background.js') }}"></script>
+    <!--<script src="{{ url_for('static', filename='camera.js') }}"></script>-->
+    <script src="{{ url_for('static', filename='global.js') }}"></script>
 </body>
 </html>

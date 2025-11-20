@@ -30,6 +30,16 @@ db = SQLAlchemy(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 
+# --- 1.1. CẬP NHẬT DATABASE MODEL ---
+class Target(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False) # Tên vật thể (VD: laptop)
+    min_qty = db.Column(db.Integer, nullable=False)  # Số lượng tối thiểu cần có
+
+# Tạo lại DB để cập nhật bảng mới (Chỉ chạy dòng này 1 lần hoặc xóa db cũ đi để tạo lại)
+with app.app_context():
+    db.create_all()
+
 # --- 3. ĐỊNH NGHĨA BẢNG DỮ LIỆU (MODEL) ---
 
 # Bảng Tài Khoản
@@ -241,6 +251,39 @@ def handle_frame(data):
 
         emit('update_detections', detected_counts)
 
+        image_data = data['image']
+        encoded_data = image_data.split(',')[1]
+        nparr = np.frombuffer(base64.b64decode(encoded_data), np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        results = model(img, conf=0.5, verbose=False)
+
+        detected_counts = {}
+        for result in results:
+            for box in result.boxes:
+                cls = model.names[int(box.cls[0])]
+                detected_counts[cls] = detected_counts.get(cls, 0) + 1
+
+
+        # --- LOGIC MỚI: SO SÁNH VỚI MỤC TIÊU (TARGETS) ---
+        # Lấy danh sách mục tiêu từ DB
+        # Lưu ý: Truy vấn DB trong vòng lặp real-time có thể chậm,
+        # thực tế nên cache lại biến này ra biến toàn cục, nhưng để đơn giản ta query luôn.
+        targets = Target.query.all()
+        is_alert = False
+
+        for t in targets:
+            # Nếu số lượng phát hiện < số lượng yêu cầu
+            current_qty = detected_counts.get(t.name, 0)
+            if current_qty < t.min_qty:
+                is_alert = True
+                break # Chỉ cần 1 món thiếu là báo động ngay
+
+        # Gửi kết quả kèm trạng thái báo động
+        emit('update_detections', {
+            'counts': detected_counts,
+            'is_alert': is_alert
+        })
+
         # Tự động lưu
         if detected_counts and (time.time() - last_save_time > SAVE_COOLDOWN):
             last_save_time = time.time()
@@ -265,8 +308,89 @@ def handle_frame(data):
             db.session.commit()
             print(f">>> [DB SAVE] Đã lưu ID: {new_record.id}")
 
+
     except Exception as e:
         print("Socket Error:", e)
+
+
+# --- 3. CẬP NHẬT LOGIC CAMERA (SOCKET) ---
+@socketio.on('send_frame')
+def handle_frame(data):
+    global last_save_time
+    try:
+        # ... (Đoạn giải mã ảnh và chạy AI giữ nguyên) ...
+        image_data = data['image']
+        encoded_data = image_data.split(',')[1]
+        nparr = np.frombuffer(base64.b64decode(encoded_data), np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        results = model(img, conf=0.5, verbose=False)
+
+        detected_counts = {}
+        for result in results:
+            for box in result.boxes:
+                cls = model.names[int(box.cls[0])]
+                detected_counts[cls] = detected_counts.get(cls, 0) + 1
+
+        # --- LOGIC MỚI: SO SÁNH VỚI MỤC TIÊU (TARGETS) ---
+        # Lấy danh sách mục tiêu từ DB
+        # Lưu ý: Truy vấn DB trong vòng lặp real-time có thể chậm,
+        # thực tế nên cache lại biến này ra biến toàn cục, nhưng để đơn giản ta query luôn.
+        targets = Target.query.all()
+        is_alert = False
+
+        for t in targets:
+            # Nếu số lượng phát hiện < số lượng yêu cầu
+            current_qty = detected_counts.get(t.name, 0)
+            if current_qty < t.min_qty:
+                is_alert = True
+                break  # Chỉ cần 1 món thiếu là báo động ngay
+
+        # Gửi kết quả kèm trạng thái báo động
+        emit('update_detections', {
+            'counts': detected_counts,
+            'is_alert': is_alert
+        })
+
+        # ... (Đoạn logic tự động lưu ảnh giữ nguyên) ...
+        # (Bạn có thể thêm điều kiện: Chỉ lưu ảnh khi is_alert == True nếu muốn)
+        if detected_counts and (time.time() - last_save_time > SAVE_COOLDOWN):
+            # ... (Code lưu ảnh cũ giữ nguyên) ...
+            pass  # (Giữ nguyên code cũ của bạn ở đây)
+
+    except Exception as e:
+        print("Socket Error:", e)
+
+# --- API CHO CÀI ĐẶT (SETTINGS) ---
+@app.route('/api/targets', methods=['GET', 'POST'])
+def manage_targets():
+    if request.method == 'GET':
+        targets = Target.query.all()
+        return jsonify([{'id': t.id, 'name': t.name, 'qty': t.min_qty} for t in targets])
+
+    if request.method == 'POST':
+        data = request.get_json()
+        # Xóa cũ thay mới hoặc thêm mới tùy logic, ở đây làm đơn giản là thêm/sửa
+        name = data.get('name')
+        qty = int(data.get('qty'))
+
+        # Kiểm tra xem đã có target tên này chưa
+        target = Target.query.filter_by(name=name).first()
+        if target:
+            target.min_qty = qty  # Cập nhật
+        else:
+            new_target = Target(name=name, min_qty=qty)
+            db.session.add(new_target)
+
+        db.session.commit()
+        return jsonify({'status': 'success'})
+
+
+@app.route('/api/delete_target', methods=['POST'])
+def delete_target():
+    id = request.get_json().get('id')
+    Target.query.filter_by(id=id).delete()
+    db.session.commit()
+    return jsonify({'status': 'success'})
 
 
 if __name__ == '__main__':
