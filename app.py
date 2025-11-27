@@ -8,6 +8,7 @@ from datetime import datetime
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from flask_socketio import SocketIO, emit
 from ultralytics import YOLO
+import torch
 
 # --- 1. THƯ VIỆN DATABASE ---
 from flask_sqlalchemy import SQLAlchemy
@@ -67,11 +68,24 @@ with app.app_context():
     db.create_all()
 
 # --- CẤU HÌNH AI ---
-print(">>> Đang tải model...")
+# 1. Tự động chọn thiết bị: GPU (cuda) hoặc CPU
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print(f"--------------------------------------------------")
+print(f">>> ĐANG SỬ DỤNG THIẾT BỊ: {device.upper()}")
+if device == 'cuda':
+    print(f">>> Tên Card: {torch.cuda.get_device_name(0)}")
+print(f"--------------------------------------------------")
+
+# 2. Tải Model
+print(">>> Đang tải model best.pt...")
 try:
     model = YOLO('best.pt')
-except:
+    model.to(device) # Chuyển toàn bộ mạng nơ-ron sang thiết bị đã chọn
+    print(">>> Model custom đã sẵn sàng!")
+except Exception as e:
+    print(f">>> LỖI: Không tìm thấy 'best.pt'. Đang dùng 'yolov8n.pt'. Lỗi: {e}")
     model = YOLO('yolov8n.pt')
+    model.to(device)
 
 last_save_time = 0
 SAVE_COOLDOWN = 3
