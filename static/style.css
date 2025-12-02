@@ -414,10 +414,8 @@ button.ghost { background-color: transparent; border-color: #FFFFFF; }
 
 /* 1. Khu vực Video */
 .video-container {
-    /* QUAN TRỌNG: Tính toán chiều cao trừ đi phần thanh điều khiển (150px) */
     height: calc(100vh - 150px);
     width: 100%;
-
     position: relative;
     display: flex;
     justify-content: center;
@@ -426,13 +424,32 @@ button.ghost { background-color: transparent; border-color: #FFFFFF; }
     overflow: hidden; /* Cắt phần video thừa nếu quá to */
 }
 
-video {
+/* Video nằm dưới */
+#video {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    /* QUAN TRỌNG: cover giúp full màn hình nhưng có thể bị cắt góc,
-       contain giúp nhìn thấy toàn bộ góc quay nhưng có thể có viền đen.
-       Ở đây dùng 'cover' cho đẹp giao diện như hình vẽ */
-    object-fit: contain;
+    object-fit: contain; /* Hoặc cover tùy bạn */
+    z-index: 1;
+}
+
+/* Canvas nằm đè lên trên (Trong suốt) */
+#overlay-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2; /* Cao hơn video */
+    pointer-events: none; /* Để click chuột xuyên qua */
+    object-fit: contain; /* Phải giống hệt video */
+}
+
+/* Các thành phần khác nổi lên trên cùng */
+.clock-overlay, .cam-overlay-badge {
+    z-index: 10;
 }
 
 .cam-overlay-badge {

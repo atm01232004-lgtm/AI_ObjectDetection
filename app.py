@@ -71,9 +71,19 @@ except:
     model = YOLO('yolov8n.pt')
     model.to(device)
 
-last_save_time = 0
-SAVE_COOLDOWN = 3
+# --- BIẾN TOÀN CỤC ---
+history_db = []
+users_db = {'admin': '123456'}
 
+# 1. Biến lưu trạng thái lần trước để so sánh sự thay đổi
+last_detected_state = {}
+
+# 2. Thời gian lưu lần cuối
+last_save_time = 0
+
+# 3. CẤU HÌNH THÔNG MINH
+MIN_COOLDOWN = 3
+PERIODIC_INTERVAL = 3600
 
 # --- 4. HÀM HỖ TRỢ ---
 def save_image_to_file(img_cv2, prefix):
@@ -229,27 +239,41 @@ def predict():
         return jsonify({'status': 'error', 'message': str(e)})
 
 
-# --- SOCKET IO (ĐÃ SỬA LỖI LẶP CODE) ---
+# --- SOCKET IO ---
 @socketio.on('send_frame')
 def handle_frame(data):
-    global last_save_time
+    global last_save_time,last_detected_state
     try:
-        # 1. Giải mã ảnh (CHỈ LÀM 1 LẦN)
+        # 1. Giải mã ảnh
         image_data = data['image']
         encoded_data = image_data.split(',')[1]
         nparr = np.frombuffer(base64.b64decode(encoded_data), np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-        # 2. Chạy AI (CHỈ LÀM 1 LẦN)
+        # 2. Chạy AI
         results = model(img, conf=0.5, verbose=False)
 
+        # 3. Xử lý dữ liệu (Đếm + Lấy tọa độ khung)
         detected_counts = {}
+        boxes_data = []  # Danh sách chứa tọa độ để gửi về Client
+
         for result in results:
             for box in result.boxes:
-                cls = model.names[int(box.cls[0])]
-                detected_counts[cls] = detected_counts.get(cls, 0) + 1
+                # A. Lấy tên class để đếm
+                class_id = int(box.cls[0])
+                class_name = model.names[class_id]
+                detected_counts[class_name] = detected_counts.get(class_name, 0) + 1
 
-        # 3. Kiểm tra cảnh báo
+                # B. Lấy tọa độ khung [x1, y1, x2, y2]
+                # box.xyxy[0] trả về tensor, cần chuyển sang list python
+                coords = box.xyxy[0].tolist()
+
+                boxes_data.append({
+                    'coords': coords,  # [x1, y1, x2, y2]
+                    'label': f"{class_name} ({box.conf[0]:.2f})"  # VD: person 0.95
+                })
+
+        # 4. Kiểm tra cảnh báo (Logic cũ)
         targets = Target.query.all()
         is_alert = False
         for t in targets:
@@ -257,29 +281,54 @@ def handle_frame(data):
                 is_alert = True
                 break
 
-        emit('update_detections', {'counts': detected_counts, 'is_alert': is_alert})
+        # 5. GỬI VỀ CLIENT (Gửi kèm boxes_data)
+        emit('update_detections', {
+            'counts': detected_counts,
+            'is_alert': is_alert,
+            'boxes': boxes_data  # <--- DỮ LIỆU MỚI: Tọa độ khung
+        })
 
-        # 4. Tự động lưu (Chỉ lưu nếu cần)
-        if detected_counts and (time.time() - last_save_time > SAVE_COOLDOWN):
-            last_save_time = time.time()
+        # 6. Tự động lưu
+        # Lấy thời gian hiện tại
+        now = time.time()
 
-            path_orig = save_image_to_file(img, "Auto_Orig")  # Lưu ảnh sạch
+        # Điều kiện 1: Có sự thay đổi về vật thể (Thêm vào hoặc Mất đi)
+        # So sánh dictionary hiện tại với lần trước
+        has_changed = (detected_counts != last_detected_state)
+
+        # Điều kiện 2: Đã quá lâu chưa chụp (Định kỳ 1 tiếng)
+        is_periodic_time = (now - last_save_time > PERIODIC_INTERVAL)
+
+        # Điều kiện 3: Phải qua thời gian hồi chiêu (3s) để tránh chụp liên thanh khi AI không ổn định
+        is_cooldown_passed = (now - last_save_time > MIN_COOLDOWN)
+
+        # ==> QUYẾT ĐỊNH CUỐI CÙNG
+        if (has_changed or is_periodic_time) and is_cooldown_passed:
+            # Cập nhật trạng thái mới để so sánh cho lần sau
+            last_detected_state = detected_counts.copy()
+            last_save_time = now
+
+            # --- TIẾN HÀNH LƯU (Code cũ) ---
+            path_orig = save_image_to_file(img, "Smart_Orig")
             annotated_img = results[0].plot()
-            path_ann = save_image_to_file(annotated_img, "Auto_Ann")  # Lưu ảnh vẽ
+            path_ann = save_image_to_file(annotated_img, "Smart_Ann")
 
             final_results = [{'name': k, 'qty': v} for k, v in detected_counts.items()]
+
+            # Xác định lý do lưu để in ra log (Debug)
+            reason = "THAY ĐỔI" if has_changed else "ĐỊNH KỲ"
 
             new_record = History(
                 timestamp=datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                 image_path=path_ann,
                 original_path=path_orig,
-                source="Camera (Auto)",
-                name=f"Cam_{int(time.time())}.jpg",
+                source=f"Camera ({reason})",  # Ghi rõ nguồn là do thay đổi hay định kỳ
+                name=f"Cam_{int(now)}.jpg",
                 results_json=json.dumps(final_results)
             )
             db.session.add(new_record)
             db.session.commit()
-            print(f">>> [DB SAVE] Đã lưu: {new_record.name}")
+            print(f">>> [SMART SAVE] Đã lưu ảnh. Lý do: {reason}. ID: {new_record.id}")
 
     except Exception as e:
         print("Socket Error:", e)

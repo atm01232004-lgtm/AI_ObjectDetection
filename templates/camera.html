@@ -86,10 +86,13 @@
 
         <div class="video-container">
             <video id="video" autoplay playsinline></video>
-            <canvas id="canvas" class="hidden"></canvas>
-            <div class="clock-overlay" id="clock">--:--:--</div>
 
+            <canvas id="overlay-canvas"></canvas>
+
+            <div class="clock-overlay" id="clock">--:--</div>
             <div class="cam-overlay-badge">REC <div class="red-dot"></div></div>
+
+            <canvas id="canvas" class="hidden"></canvas>
         </div>
 
         <div class="control-bar">

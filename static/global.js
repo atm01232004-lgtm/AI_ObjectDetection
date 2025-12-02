@@ -158,3 +158,65 @@ function updateUI(counts) {
         }
     }
 }
+
+// --- LOGIC VẼ KHUNG LÊN VIDEO (CANVAS OVERLAY) ---
+
+const overlayCanvas = document.getElementById('overlay-canvas');
+const mainVideo = document.getElementById('video'); // Video ở trang camera.html
+
+// Hàm vẽ khung
+function drawBoxes(boxes) {
+    if (!overlayCanvas || !mainVideo) return; // Nếu không ở trang camera thì thôi
+
+    const ctx = overlayCanvas.getContext('2d');
+
+    // 1. Đồng bộ kích thước Canvas với Video thật
+    // Video có thể bị CSS co giãn, ta cần lấy kích thước hiển thị thực tế
+    overlayCanvas.width = mainVideo.videoWidth;
+    overlayCanvas.height = mainVideo.videoHeight;
+
+    // Xóa khung cũ đi
+    ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+    // 2. Vẽ các khung mới
+    boxes.forEach(box => {
+        const [x1, y1, x2, y2] = box.coords;
+        const label = box.label;
+
+        // Vẽ hình chữ nhật
+        ctx.beginPath();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "#00e676"; // Màu xanh lá neon (Rất nổi)
+        ctx.rect(x1, y1, (x2 - x1), (y2 - y1));
+        ctx.stroke();
+
+        // Vẽ nền chữ
+        ctx.fillStyle = "#00e676";
+        ctx.font = "bold 20px Arial";
+        const textWidth = ctx.measureText(label).width;
+        ctx.fillRect(x1, y1 - 25, textWidth + 10, 25);
+
+        // Vẽ chữ
+        ctx.fillStyle = "#000000"; // Chữ đen
+        ctx.fillText(label, x1 + 5, y1 - 5);
+    });
+}
+
+// CẬP NHẬT SOCKET LẮNG NGHE
+socket.on('update_detections', function(data) {
+    // 1. Logic cảnh báo (Giữ nguyên)
+    if (typeof navCamIcon !== 'undefined') {
+        if (data.is_alert) navCamIcon.classList.add('alert-active');
+        else navCamIcon.classList.remove('alert-active');
+    }
+
+    // 2. Logic cập nhật bảng số lượng (Giữ nguyên)
+    if (typeof updateUI === 'function') {
+        updateUI(data.counts);
+    }
+
+    // 3. LOGIC MỚI: GỌI HÀM VẼ KHUNG
+    if (data.boxes) {
+        drawBoxes(data.boxes);
+    }
+});
