@@ -220,9 +220,17 @@ def delete_target():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
+        if 'file' not in request.files:
+            return jsonify({'status': 'error', 'message': 'Chưa chọn file'})
+
         file = request.files['file']
         file_bytes = np.frombuffer(file.read(), np.uint8)
         img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+
+        # --- THÊM ĐOẠN NÀY ĐỂ FIX LỖI ---
+        if img is None:
+            return jsonify({'status': 'error', 'message': 'File không hợp lệ hoặc không phải ảnh'})
+        # --------------------------------
 
         path_orig = save_image_to_file(img, "Upload_Orig")
         results = model(img, conf=0.4)
