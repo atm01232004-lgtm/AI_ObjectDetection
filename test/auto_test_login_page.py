@@ -1,5 +1,6 @@
 import unittest
 import time
+import sys
 import os
 from datetime import datetime
 from selenium import webdriver
@@ -7,37 +8,33 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment
 
-# --- CẤU HÌNH ---
+# --- CẤU HÌNH ĐƯỜNG DẪN IMPORT ---
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# Thêm thư mục 'test' vào sys.path để Python tìm thấy 'utils'
+sys.path.append(current_dir)
+
+# Import module báo cáo dùng chung (Tránh lặp code)
+from utils.excel_reporter import ExcelReporter
+
+# --- CẤU HÌNH TEST ---
 BASE_URL = "http://127.0.0.1:5000"
 TIME_WAIT = 2.0
-REPORT_FOLDER = "AutoTest_Results"
-REPORT_FILE = "Ket_qua_AutoTest_Login.xlsx"
 
 
 class TestLoginFlow(unittest.TestCase):
-    # Dùng biến class để lưu log chung cho tất cả các test case
-    test_logs = []
-
-    @classmethod
-    def setUpClass(cls):
-        """Chạy 1 lần duy nhất khi bắt đầu file test"""
-        if not os.path.exists(REPORT_FOLDER):
-            os.makedirs(REPORT_FOLDER)
+    # 1. KHỞI TẠO BỘ BÁO CÁO (DÙNG CHUNG CHO CẢ CLASS)
+    reporter = ExcelReporter(report_folder="AutoTest_Results", report_title="Login_Test_Report")
 
     @classmethod
     def tearDownClass(cls):
         """Chạy 1 lần duy nhất khi kết thúc file test -> Xuất Excel"""
-        print(f"\n>>> Đang xuất báo cáo tổng hợp ra file Excel: {REPORT_FILE}")
-        cls.export_report_to_excel()
+        cls.reporter.save_report()
 
     def setUp(self):
         print(f"\n{'=' * 60}")
         print(f"🚀 BẮT ĐẦU TEST CASE: [{self._testMethodName}]")
         chrome_options = Options()
-        # chrome_options.add_argument("--headless")
         self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
         self.driver.maximize_window()
 
@@ -46,95 +43,42 @@ class TestLoginFlow(unittest.TestCase):
         time.sleep(1)
         self.driver.quit()
 
-    def log_step(self, step_name, details, status, error_msg=""):
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        TestLoginFlow.test_logs.append([timestamp, step_name, details, status, error_msg])
-
-        # --- SỬA ĐOẠN NÀY ---
-        icon = "❓"
-        if status == "PASS":
-            icon = "✅"
-        elif status == "FAIL":
-            icon = "❌"
-        elif status == "INFO":
-            icon = "ℹ️"  # Icon thông tin màu xanh dương
-
-        print(f"   [{timestamp}] {icon} {step_name}: {status}")
-
-    @classmethod
-    def export_report_to_excel(cls):
-        try:
-            wb = openpyxl.Workbook()
-            ws = wb.active
-            ws.title = "Login Test Report"
-
-            headers = ["Thời gian", "Tên bước", "Chi tiết", "Trạng thái", "Ghi chú / Lỗi"]
-            ws.append(headers)
-
-            header_fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
-            header_font = Font(bold=True)
-            for col in range(1, 6):
-                cell = ws.cell(row=1, column=col)
-                cell.fill = header_fill
-                cell.font = header_font
-                cell.alignment = Alignment(horizontal="center")
-
-            pass_font = Font(color="008000", bold=True)
-            fail_font = Font(color="FF0000", bold=True)
-
-            for row_data in cls.test_logs:
-                ws.append(row_data)
-                current_row = ws.max_row
-                status_cell = ws.cell(row=current_row, column=4)
-                if status_cell.value == "PASS":
-                    status_cell.font = pass_font
-                elif status_cell.value == "FAIL":
-                    status_cell.font = fail_font
-
-            # Chỉnh độ rộng cột
-            widths = [20, 25, 40, 10, 30]
-            for i, w in enumerate(widths, 1):
-                col_letter = openpyxl.utils.get_column_letter(i)
-                ws.column_dimensions[col_letter].width = w
-
-            # Tạo tên file có ngày giờ để không bị ghi đè
-            filename = f"LoginReport_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-            full_path = os.path.join(REPORT_FOLDER, filename)
-            wb.save(full_path)
-            print(f">>> Đã lưu file: {full_path}")
-
-        except Exception as e:
-            print(f"Lỗi xuất Excel: {e}")
-
     # =========================================================================
-    # TEST CASE 1: ĐĂNG KÝ VÀ ĐĂNG NHẬP THÀNH CÔNG (HAPPY PATH)
+    # TEST CASE 1: HAPPY PATH (ĐĂNG KÝ -> ĐĂNG NHẬP)
     # =========================================================================
     def test_1_happy_path(self):
         driver = self.driver
-        try:
-            self.log_step("Test Case 1", "Chạy kịch bản đăng ký/đăng nhập chuẩn", "INFO")
+        test_id = "TC_LOGIN_01"
+        module = "Login Page"
+        name = "Kiểm tra luồng đăng ký và đăng nhập chuẩn"
+        steps = ""
+        input_data = ""
+        actual_result = ""
+        status = "FAIL"
 
-            # 1. Vào trang Login
+        try:
+            steps += "1. Truy cập trang Login\n"
             driver.get(f"{BASE_URL}/login")
             time.sleep(TIME_WAIT)
 
-            # 2. Sang Đăng Ký
+            # Sang Đăng Ký
+            steps += "2. Chuyển sang form Đăng Ký\n"
             driver.find_element(By.ID, "signUp").click()
             time.sleep(TIME_WAIT)
 
-            # 3. Đăng Ký User Mới
+            # Đăng Ký
+            steps += "3. Điền thông tin đăng ký\n"
             test_user = f"user_{int(time.time())}"
             test_pass = "123456"
+            input_data = f"User: {test_user}, Pass: {test_pass}"
 
             driver.find_element(By.CSS_SELECTOR, ".sign-up-container input[name='username']").send_keys(test_user)
             driver.find_element(By.CSS_SELECTOR, ".sign-up-container input[name='password']").send_keys(test_pass)
             driver.find_element(By.CSS_SELECTOR, ".sign-up-container button").click()
-
-            self.log_step("Đăng Ký", f"Tạo user: {test_user}", "PASS")
             time.sleep(TIME_WAIT)
 
-            # 4. Đăng Nhập
-            # Lưu ý: Code trước đó đã có logic tự chuyển về tab đăng nhập nếu thành công
+            # Đăng Nhập
+            steps += "4. Đăng nhập với tài khoản vừa tạo\n"
             u_in = driver.find_element(By.CSS_SELECTOR, ".sign-in-container input[name='username']")
             p_in = driver.find_element(By.CSS_SELECTOR, ".sign-in-container input[name='password']")
             b_in = driver.find_element(By.CSS_SELECTOR, ".sign-in-container button")
@@ -142,76 +86,120 @@ class TestLoginFlow(unittest.TestCase):
             u_in.clear()
             u_in.send_keys(test_user)
             p_in.send_keys(test_pass)
-            b_in.click()
+            # Dùng JS Click để chắc chắn
+            driver.execute_script("arguments[0].click();", b_in)
 
-            self.log_step("Đăng Nhập", "Submit form đăng nhập", "PASS")
             time.sleep(TIME_WAIT)
 
-            # 5. Kiểm tra Dashboard
+            # Kiểm tra Dashboard
             if "AI" in driver.title:
-                self.log_step("Kết Quả", f"Vào trang chủ thành công (Title: {driver.title})", "PASS")
+                status = "PASS"
+                actual_result = f"Đăng nhập thành công, tiêu đề: {driver.title}"
+                print("   ✅ Vào trang chủ thành công.")
             else:
-                self.log_step("Kết Quả", f"Sai trang: {driver.title}", "FAIL")
+                actual_result = f"Sai trang, tiêu đề: {driver.title}"
+                print("   ❌ Không vào được trang chủ.")
 
         except Exception as e:
-            self.log_step("LỖI EXCEPTION", "Lỗi trong Test Case 1", "FAIL", str(e))
+            actual_result = f"Lỗi Exception: {str(e)}"
+            print(f"   ❌ Lỗi: {e}")
+
+        finally:
+            # Ghi vào Excel bằng module chung
+            self.reporter.add_result(
+                case_id=test_id, module=module, test_name=name,
+                steps=steps, input_data=input_data,
+                expected="Đăng nhập thành công vào Dashboard",
+                actual=actual_result, status=status, priority="High"
+            )
 
     # =========================================================================
-    # TEST CASE 2: ĐĂNG NHẬP SAI MẬT KHẨU (NEGATIVE TEST)
+    # TEST CASE 2: ĐĂNG NHẬP SAI MẬT KHẨU
     # =========================================================================
     def test_2_wrong_password(self):
         driver = self.driver
+        test_id = "TC_LOGIN_02"
+        module = "Login Page"
+        name = "Kiểm tra báo lỗi khi sai mật khẩu"
+        steps = "1. Truy cập trang login\n2. Nhập sai pass\n3. Bấm login"
+        input_data = "User: admin, Pass: sai_pass"
+        actual_result = ""
+        status = "FAIL"
+
         try:
-            self.log_step("Test Case 2", "Test đăng nhập sai mật khẩu", "INFO")
             driver.get(f"{BASE_URL}/login")
             time.sleep(TIME_WAIT)
 
-            # Dùng user admin mặc định (nếu có), hoặc user bất kỳ
             driver.find_element(By.CSS_SELECTOR, ".sign-in-container input[name='username']").send_keys("admin")
             driver.find_element(By.CSS_SELECTOR, ".sign-in-container input[name='password']").send_keys("matkhausai123")
-            driver.find_element(By.CSS_SELECTOR, ".sign-in-container button").click()
+
+            btn = driver.find_element(By.CSS_SELECTOR, ".sign-in-container button")
+            driver.execute_script("arguments[0].click();", btn)
 
             time.sleep(TIME_WAIT)
 
-            # Kiểm tra xem có thông báo lỗi không
-            page_source = driver.page_source
-            if "Sai tài khoản hoặc mật khẩu" in page_source:
-                self.log_step("Kiểm tra Lỗi", "Hệ thống báo lỗi chính xác", "PASS")
+            if "Sai tài khoản hoặc mật khẩu" in driver.page_source:
+                status = "PASS"
+                actual_result = "Hệ thống hiển thị thông báo lỗi chính xác"
+                print("   ✅ Báo lỗi đúng.")
             else:
-                self.log_step("Kiểm tra Lỗi", "Hệ thống không báo lỗi sai mật khẩu", "FAIL")
+                actual_result = "Không thấy thông báo lỗi"
+                print("   ❌ Không báo lỗi.")
 
         except Exception as e:
-            self.log_step("LỖI EXCEPTION", "Lỗi trong Test Case 2", "FAIL", str(e))
+            actual_result = f"Lỗi: {e}"
+
+        finally:
+            self.reporter.add_result(
+                case_id=test_id, module=module, test_name=name,
+                steps=steps, input_data=input_data,
+                expected="Hiển thị thông báo sai mật khẩu",
+                actual=actual_result, status=status, priority="Medium"
+            )
 
     # =========================================================================
-    # TEST CASE 3: ĐĂNG KÝ TRÙNG TÊN (NEGATIVE TEST)
+    # TEST CASE 3: ĐĂNG KÝ TRÙNG TÊN
     # =========================================================================
     def test_3_duplicate_register(self):
         driver = self.driver
+        test_id = "TC_LOGIN_03"
+        module = "Login Page"
+        name = "Kiểm tra chặn đăng ký trùng tên"
+        steps = "1. Mở form đăng ký\n2. Nhập tên 'admin'\n3. Submit"
+        input_data = "User: admin"
+        actual_result = ""
+        status = "FAIL"
+
         try:
-            self.log_step("Test Case 3", "Test đăng ký trùng tài khoản", "INFO")
             driver.get(f"{BASE_URL}/login")
             time.sleep(1)
             driver.find_element(By.ID, "signUp").click()
             time.sleep(1)
 
-            # Dùng tên 'admin' vì thường user này đã có sẵn
-            existing_user = "admin"
-
-            driver.find_element(By.CSS_SELECTOR, ".sign-up-container input[name='username']").send_keys(existing_user)
+            driver.find_element(By.CSS_SELECTOR, ".sign-up-container input[name='username']").send_keys("admin")
             driver.find_element(By.CSS_SELECTOR, ".sign-up-container input[name='password']").send_keys("123")
             driver.find_element(By.CSS_SELECTOR, ".sign-up-container button").click()
 
             time.sleep(TIME_WAIT)
 
-            # Kiểm tra thông báo lỗi
             if "Tài khoản đã tồn tại" in driver.page_source:
-                self.log_step("Kiểm tra Trùng", "Hệ thống chặn đăng ký trùng", "PASS")
+                status = "PASS"
+                actual_result = "Hệ thống báo lỗi tài khoản tồn tại"
+                print("   ✅ Chặn trùng thành công.")
             else:
-                self.log_step("Kiểm tra Trùng", "Hệ thống cho phép trùng hoặc không báo lỗi", "FAIL")
+                actual_result = "Không báo lỗi trùng"
+                print("   ❌ Cho phép trùng hoặc lỗi khác.")
 
         except Exception as e:
-            self.log_step("LỖI EXCEPTION", "Lỗi trong Test Case 3", "FAIL", str(e))
+            actual_result = f"Lỗi: {e}"
+
+        finally:
+            self.reporter.add_result(
+                case_id=test_id, module=module, test_name=name,
+                steps=steps, input_data=input_data,
+                expected="Hiển thị lỗi tài khoản tồn tại",
+                actual=actual_result, status=status, priority="Medium"
+            )
 
 
 if __name__ == "__main__":
