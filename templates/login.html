@@ -25,6 +25,9 @@
                 <input type="text" name="username" placeholder="Tên đăng nhập" required />
                 <input type="password" name="password" placeholder="Mật khẩu" required />
                 <input type="hidden" name="action" value="register">
+                {% if active_panel == 'register' and error %}
+                    <p class="msg-error">{{ error }}</p>
+                {% endif %}
                 <button class="btn-auth">Đăng Ký</button>
             </form>
         </div>
@@ -49,7 +52,7 @@
                     <p class="msg-success">{{ success }}</p>
                 {% endif %}
 
-                <a href="#">Quên mật khẩu?</a>
+<!--                <a href="#">Quên mật khẩu?</a>-->
                 <button class="btn-auth">Đăng Nhập</button>
             </form>
         </div>
@@ -94,12 +97,18 @@
         const container = document.getElementById('container');
 
         signUpButton.addEventListener('click', () => {
-            container.classList.add("right-panel-active");
+        container.classList.add("right-panel-active");
         });
 
         signInButton.addEventListener('click', () => {
             container.classList.remove("right-panel-active");
         });
+
+        const activePanel = "{{ active_panel }}";
+        if (activePanel === 'register') {
+        container.classList.add("right-panel-active");
+        }
+
     </script>
 
     <script src="{{ url_for('static', filename='background.js') }}"></script>

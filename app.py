@@ -115,18 +115,28 @@ def statistics_page():
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
     if 'username' in session: return redirect(url_for('index'))
+
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         action = request.form.get('action')
 
         if action == 'register':
+            # Kiểm tra tồn tại
             if User.query.filter_by(username=username).first():
-                return render_template('login.html', error="Tài khoản đã tồn tại!")
+                # LỖI: Trả về thông báo lỗi VÀ giữ nguyên màn hình 'register'
+                return render_template('login.html',
+                                       error="Tài khoản đã tồn tại!",
+                                       active_panel='register')
+
             new_user = User(username=username, password=password)
             db.session.add(new_user)
             db.session.commit()
-            return render_template('login.html', success="Đăng ký thành công!")
+
+            # THÀNH CÔNG: Chuyển người dùng về màn hình 'login' để họ đăng nhập
+            return render_template('login.html',
+                                   success="Đăng ký thành công! Hãy đăng nhập.",
+                                   active_panel='login')
 
         elif action == 'login':
             user = User.query.filter_by(username=username, password=password).first()
@@ -134,8 +144,13 @@ def login_page():
                 session['username'] = user.username
                 return redirect(url_for('index'))
             else:
-                return render_template('login.html', error="Sai tài khoản/mật khẩu!")
-    return render_template('login.html')
+                # LỖI: Giữ nguyên màn hình 'login'
+                return render_template('login.html',
+                                       error="Sai tài khoản hoặc mật khẩu!",
+                                       active_panel='login')
+
+    # Mặc định khi mới vào trang (GET request) thì hiện login
+    return render_template('login.html', active_panel='login')
 
 
 @app.route('/logout')

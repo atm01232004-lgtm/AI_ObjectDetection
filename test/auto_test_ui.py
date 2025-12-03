@@ -62,7 +62,10 @@ class TestFullInterfaceV3(unittest.TestCase):
 
         # 1.1 Upload ảnh
         print(f"   [Action] Upload ảnh: {os.path.basename(IMG_PATH)}")
-        driver.find_element(By.ID, "fileElem").send_keys(IMG_PATH)
+        file_input = driver.find_element(By.ID, "fileElem")
+        driver.execute_script("arguments[0].style.display = 'block';", file_input)
+        file_input.send_keys(IMG_PATH)
+
         time.sleep(TIME_WAIT)
 
         # 1.2 Bấm Nhận dạng
