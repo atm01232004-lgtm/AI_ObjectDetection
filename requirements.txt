@@ -1,0 +1,11 @@
+flask
+flask-socketio
+flask-sqlalchemy
+ultralytics
+opencv-python
+numpy
+selenium
+webdriver-manager
+openpyxl
+requests
+pillow
